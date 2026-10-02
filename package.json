@@ -1,0 +1,13 @@
+{
+  "engines": {
+    "node": ">=24"
+  },
+  "license": "Apache-2.0",
+  "name": "view.bullet",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/verify.mjs && node scripts/test-blend.mjs && python3 -m unittest discover -s test"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}

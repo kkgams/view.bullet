@@ -1,0 +1,9 @@
+view.bullet
+GAMS-authored contributions: Apache-2.0; root LICENSE. This does not relicense third-party code or assets.
+
+View source/header/import scan found no identifiable vendored third-party implementation in selected entry files. This is a bounded scan, not an authorship certificate. BulletML command/schema ideas alone do not prove a copied interpreter; no external BulletML package is bundled in the current source closure.
+Absolute /util/, /widgets/, /core/ imports are Host-provided runtime dependencies, not distribution of those helper bytes. In particular markdown-it, Ajv, aseprite.js, voxel helpers and icon font names do not bundle their libraries/font binaries. Host has a separate approved notice boundary; this audit does not recertify Host provenance.
+
+Full terms: LICENSES/. Review: THIRD-PARTY-REVIEW.md. This notice is source-bound, not a certification of unverified upstream provenance or current linked contents.
+
+NOTICE-EVIDENCE.json SHA-256: 911dd83c5f57b336dd8395dd564b5a8cf39eee42519063128152958702a3101c

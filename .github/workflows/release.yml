@@ -1,0 +1,70 @@
+name: Verify and publish Project Unit
+on:
+  push:
+    branches: [release]
+    tags: ['v*']
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: unit-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    env:
+      APPROVED_LICENSE_SHA256: ${{ vars.LICENSE_SHA256 }}
+      APPROVED_NOTICE_SHA256: ${{ vars.NOTICE_SHA256 }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - run: npm test
+      - name: Require tag at release HEAD
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python3 scripts/release.py branch --tag "$GITHUB_REF_NAME"
+      - name: Independently stage and check candidate
+        if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/release' && (vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''))
+        run: |
+          tag="v$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')"
+          python3 scripts/release.py stage --tag "$tag"
+          python3 scripts/release.py check --tag "$tag"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/release' && (vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''))
+        with:
+          name: unit-${{ github.ref_name }}
+          path: dist/candidate/
+          if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: candidate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      APPROVED_LICENSE_SHA256: ${{ vars.LICENSE_SHA256 }}
+      APPROVED_NOTICE_SHA256: ${{ vars.NOTICE_SHA256 }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - run: python3 scripts/release.py branch --tag "$GITHUB_REF_NAME"
+      - run: python3 scripts/release.py absent --tag "$GITHUB_REF_NAME"
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: unit-${{ github.ref_name }}
+          path: dist/candidate/
+      - run: python3 scripts/release.py check --tag "$GITHUB_REF_NAME"
+      - name: Publish immutable tag release (no npm or OCI)
+        run: |
+          python3 scripts/release.py absent --tag "$GITHUB_REF_NAME"
+          python3 scripts/release.py policy --tag "$GITHUB_REF_NAME"
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --latest=false --title "$GITHUB_REF_NAME" --generate-notes dist/candidate/*
+          python3 scripts/release.py draft --tag "$GITHUB_REF_NAME"
+          python3 scripts/release.py policy --tag "$GITHUB_REF_NAME"
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest=false
+          python3 scripts/release.py public --tag "$GITHUB_REF_NAME"

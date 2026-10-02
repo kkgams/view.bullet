@@ -1,0 +1,13 @@
+{
+  "hostImports": {
+    "view.bullet": [
+      "/core/runtime.js",
+      "/util/view-canvas-base.js"
+    ]
+  },
+  "limits": "Parent must add source-bound LICENSE/NOTICE evidence before distribution.",
+  "transformation": "Blend entries remove only the other registration block; original source retained under upstream/.",
+  "upstream_sha256": {
+    "views/view-bullet.js": "0ff83383527b2ce9837296eb8758a69080721b88c785d9bb7a307cbf7d239bfe"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "hostImports": {
+    "view.bullet": [
+      "/core/runtime.js",
+      "/util/view-canvas-base.js"
+    ]
+  },
+  "packages": [
+    {
+      "entry": "views/view-bullet.js",
+      "files": {
+        "src/view.bullet/views/view-bullet.js": "views/view-bullet.js"
+      },
+      "kind": "view",
+      "name": "view.bullet",
+      "sha256": {
+        "src/view.bullet/views/view-bullet.js": "0ff83383527b2ce9837296eb8758a69080721b88c785d9bb7a307cbf7d239bfe"
+      },
+      "tag": "view-bullet"
+    }
+  ],
+  "repository": "view.bullet"
+}

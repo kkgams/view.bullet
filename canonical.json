@@ -1,0 +1,50 @@
+{
+  "view.animation": [
+    "view.animation-tree",
+    "view.animation-selector",
+    "view.animation-parameters",
+    "view.animation-blend-space-1d",
+    "view.animation-blend-space-2d"
+  ],
+  "view.bullet": [
+    "view.bullet"
+  ],
+  "view.catalog": [
+    "view.catalog",
+    "view.catalog-tileset-edit",
+    "view.catalog-sprite-import",
+    "view.catalog-nine-patch-edit"
+  ],
+  "view.image": [
+    "view.image",
+    "view.aseprite"
+  ],
+  "view.markov": [
+    "view.markov"
+  ],
+  "view.project-tools": [
+    "view.issues",
+    "view.markdown",
+    "view.props"
+  ],
+  "view.sql": [
+    "view.sql",
+    "view.sql-console",
+    "view.sql-table-editor"
+  ],
+  "view.tilemap": [
+    "view.tilemap",
+    "view.tilemap-settings",
+    "view.tile-extractor"
+  ],
+  "view.tree": [
+    "view.tree",
+    "view.tree-parent"
+  ],
+  "view.vox": [
+    "view.vox"
+  ],
+  "view.world": [
+    "view.world"
+  ]
+}
