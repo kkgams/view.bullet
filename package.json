@@ -9,5 +9,5 @@
     "test": "node scripts/verify.mjs && node scripts/test-blend.mjs && python3 -m unittest discover -s test"
   },
   "type": "module",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

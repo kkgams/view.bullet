@@ -30,22 +30,33 @@ repository releases its complete canonical package set at one strict SemVer tag.
    deployment hashes, retained metadata and Host target 2.0.3.
 5. Owner creates version tag at current release HEAD. Tag CI repeats tests, digest,
    canonical repository, version, branch/tag/workflow SHA and artifact checks.
+   Both jobs check out the event commit explicitly with full history: pinned checkout
+   v5 tag-mode can locally replace an annotated tag with its peeled commit. Explicit
+   commit checkout preserves remote tag objects; strict annotation/remote identity
+   checks remain required (never ref repair or acceptance of lightweight tags).
    Existing releases (including drafts) and API failures block publication. Public
    creation first requires public visibility and the read-only immutable-releases
-   policy endpoint to confirm enabled=true. The publication credential must have
-   admin-read access for that endpoint; API failures never weaken this requirement.
-   CI uploads to a draft, verifies every asset byte and the exact assetset, rechecks
-   policy, then publishes with --latest=false. Failed drafts require a NEW version,
-   not overwrite/repair. Post-publication
-   unauthenticated verification requires immutable stable public release metadata
-   and exact complete assetset bytes. Recover by a NEW version, never overwrite.
+   policy endpoint to confirm enabled=true. RELEASE_POLICY_TOKEN must be a
+   fine-grained Administration:read repository secret scoped to this repository.
+   It is used only by policy GETs, never release/content writes. GH_TOKEN remains
+   the ordinary contents:write workflow credential. Branch CI probes the policy
+   credential before uploading candidates; missing/expired credentials fail before
+   tagging. No token fallback is supported.
+   scripts/publication.py publishes draft-first: bounded no-cache visibility polling
+   after one successful create (never repeats writes), canonical authenticated asset
+   API identities/digests/downloaded bytes and stable metadata. Draft browser links
+   may use untagged-*; public links must use the exact version tag. Source/annotated
+   tag, candidate bytes, public visibility and immutable policy are rechecked before
+   freeze. Published exact bytes/complete assetset/stable immutable metadata are then
+   checked anonymously. Failed drafts/tags require a NEW version, never overwrite,
+   repair or retag. Normal tag publication does not require the local owner publisher.
 
 Local rehearsal (after evidence and approvals):
 
 ```
-python3 scripts/release.py stage --tag v0.1.0
-python3 scripts/release.py check --tag v0.1.0
-python3 scripts/release.py install --tag v0.1.0 --archives dist/candidate/view.NAME-0.1.0.zip --checksums dist/candidate/SHA256SUMS --destination /path/to/project
+python3 scripts/release.py stage --tag v0.1.1
+python3 scripts/release.py check --tag v0.1.1
+python3 scripts/release.py install --tag v0.1.1 --archives dist/candidate/view.NAME-0.1.1.zip --checksums dist/candidate/SHA256SUMS --destination /path/to/project
 ```
 
 Installation checks selected archive checksums, ZIP members, manifests, hashes and

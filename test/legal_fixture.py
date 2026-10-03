@@ -3,6 +3,10 @@ import json
 
 
 def bind(root, release):
+    # Protocol tests retain a synthetic 0.1.0 fixture independently of release version.
+    package = json.loads((root / 'package.json').read_text())
+    package['version'] = '0.1.0'
+    (root / 'package.json').write_text(json.dumps(package, indent=2) + '\n')
     config = json.loads((root / 'release.json').read_text())
     (root / 'LICENSES').mkdir(exist_ok=True)
     (root / 'LICENSES/fixture-Apache-2.0.txt').write_bytes((root / 'LICENSE').read_bytes())

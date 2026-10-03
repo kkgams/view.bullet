@@ -221,7 +221,7 @@ class ReleaseTests(unittest.TestCase):
     def test_release_branch_approval_truth_table(self):
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
         condition = "startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/release' && (vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''))"
-        self.assertEqual(workflow.count('if: ' + condition), 2)
+        self.assertEqual(workflow.count('if: ' + condition), 3)
         for license_value, notice_value, stages, succeeds in [('', '', False, False),
                 (self.env['APPROVED_LICENSE_SHA256'], '', True, False),
                 ('', self.env['APPROVED_NOTICE_SHA256'], True, False),
@@ -268,12 +268,15 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 r.draft(self.root, self.out, 'v0.1.0', 'token')
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
-        self.assertLess(workflow.index('release.py draft'), workflow.index('gh release edit'))
-        self.assertIn('--draft --verify-tag', workflow)
+        self.assertIn('scripts/publication.py publish', workflow)
+        self.assertIn('RELEASE_POLICY_TOKEN: ${{ secrets.RELEASE_POLICY_TOKEN }}', workflow)
+        publisher = (ROOT / 'scripts/publication.py').read_text()
+        self.assertLess(publisher.index('draft_bytes(repository'), publisher.index("gh('release', 'edit'"))
+        self.assertIn("'--draft', '--verify-tag'", publisher)
 
     def test_workflow_gates(self):
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
-        for gate in ('needs: candidate', "vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''", '--latest=false', 'release.py public', 'release.py branch', 'release.py absent', 'release.py check'):
+        for gate in ('needs: candidate', "vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''", 'publication.py policy', 'publication.py publish', 'release.py branch', 'release.py absent', 'release.py check', 'GH_TOKEN: ${{ github.token }}'):
             self.assertIn(gate, workflow)
         self.assertNotIn('--clobber', workflow)
         self.assertNotIn('npm publish', workflow)
