@@ -54,9 +54,9 @@ repository releases its complete canonical package set at one strict SemVer tag.
 Local rehearsal (after evidence and approvals):
 
 ```
-python3 scripts/release.py stage --tag v0.1.1
-python3 scripts/release.py check --tag v0.1.1
-python3 scripts/release.py install --tag v0.1.1 --archives dist/candidate/view.NAME-0.1.1.zip --checksums dist/candidate/SHA256SUMS --destination /path/to/project
+python3 scripts/release.py stage --tag v0.2.0
+python3 scripts/release.py check --tag v0.2.0
+python3 scripts/release.py install --tag v0.2.0 --archives dist/candidate/view.NAME-0.2.0.zip --checksums dist/candidate/SHA256SUMS --destination /path/to/project
 ```
 
 Installation checks selected archive checksums, ZIP members, manifests, hashes and
