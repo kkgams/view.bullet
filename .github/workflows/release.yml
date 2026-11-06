@@ -12,9 +12,6 @@ concurrency:
 jobs:
   candidate:
     runs-on: ubuntu-latest
-    env:
-      APPROVED_LICENSE_SHA256: ${{ vars.LICENSE_SHA256 }}
-      APPROVED_NOTICE_SHA256: ${{ vars.NOTICE_SHA256 }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -25,22 +22,22 @@ jobs:
         with:
           node-version: 24
       - run: npm test
-      - name: Validate dedicated policy-read credential before any tag publication
-        if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/release' && (vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''))
+      - name: Validate canonical public repository metadata
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release'
         env:
-          RELEASE_POLICY_TOKEN: ${{ secrets.RELEASE_POLICY_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: python3 scripts/publication.py policy
-      - name: Require tag at release HEAD
+      - name: Require matching tag and workflow commit
         if: startsWith(github.ref, 'refs/tags/v')
         run: python3 scripts/release.py branch --tag "$GITHUB_REF_NAME"
       - name: Independently stage and check candidate
-        if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/release' && (vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''))
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release'
         run: |
           tag="v$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')"
           python3 scripts/release.py stage --tag "$tag"
           python3 scripts/release.py check --tag "$tag"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/release' && (vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''))
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release'
         with:
           name: unit-${{ github.ref_name }}
           path: dist/candidate/
@@ -52,8 +49,6 @@ jobs:
     permissions:
       contents: write
     env:
-      APPROVED_LICENSE_SHA256: ${{ vars.LICENSE_SHA256 }}
-      APPROVED_NOTICE_SHA256: ${{ vars.NOTICE_SHA256 }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -69,6 +64,4 @@ jobs:
           path: dist/candidate/
       - run: python3 scripts/release.py check --tag "$GITHUB_REF_NAME"
       - name: Publish immutable tag release (no npm or OCI)
-        env:
-          RELEASE_POLICY_TOKEN: ${{ secrets.RELEASE_POLICY_TOKEN }}
         run: python3 scripts/publication.py publish --tag "$GITHUB_REF_NAME"

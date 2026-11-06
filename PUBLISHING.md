@@ -8,10 +8,11 @@ repository releases its complete canonical package set at one strict SemVer tag.
    replace PROVENANCE_PENDING using the full remaining_audit schema v1.
    NOTICE-EVIDENCE.json binds the exact complete repository input set, repository,
    distribution contract, exclusions, legal terms and NOTICE body. Explicit
-   permission blockers are fatal even with matching approved digests.
+   permission blockers are fatal.
    Only exact root SOURCE.json/NOTICE/evidence, .git, dist/candidate and Python
    caches scripts/__pycache__/test/__pycache__ are excluded after preparation.
-   New source, scripts or legal files require a refreshed audit and NOTICE digest.
+   New source, scripts or legal files require a separately authorized audit refresh;
+   this policy migration does not refresh evidence.
    NOTICE must end with `NOTICE-EVIDENCE.json SHA-256: <digest>`.
    Preserve source-only license snippets; do not interpret Apache-2.0 as relicensing
    upstream code. Parent owns this evidence, remotes and final Git setup.
@@ -20,38 +21,34 @@ repository releases its complete canonical package set at one strict SemVer tag.
    release.json. No missing-import/config/schema recovery is supported. Services,
    plugins and sibling Views must be configured by the Project. Source preservation
    and syntax checks are not GUI E2E evidence.
-3. Set repository variables LICENSE_SHA256 and NOTICE_SHA256 to exact reviewed
-   file digests. Enable GitHub immutable releases and public visibility. Never move
-   a pushed tag. Push reviewed release branch (owner-only).
-4. Branch CI is tests-only when both digests are absent. If either is supplied,
-   both must be valid and match: partial or malformed configuration fails. Stage and
-   check cover the entire expected ZIP assetset plus SHA256SUMS with deterministic
-   bytes; no missing-output source fallback. Every ZIP has independent unit.json,
-   deployment hashes, retained metadata and Host target 2.0.3.
-5. Owner creates version tag at current release HEAD. Tag CI repeats tests, digest,
-   canonical repository, version, branch/tag/workflow SHA and artifact checks.
+3. A pushed matching version tag authorizes publication from any branch, without
+   manual checksum approval variables. Enable GitHub immutable releases and public
+   visibility. Never move a pushed tag.
+4. Release-branch CI stages and checks candidates without approval variables.
+   Stage and check cover the entire expected ZIP assetset plus SHA256SUMS with
+   deterministic bytes; no missing-output source fallback. Every ZIP has independent
+   unit.json, deployment hashes, retained metadata and Host target 2.0.3.
+5. Tag CI repeats tests, canonical repository, version, tag/workflow commit and
+   artifact checks. The tag need not match a release-branch HEAD.
    Both jobs check out the event commit explicitly with full history: pinned checkout
    v5 tag-mode can locally replace an annotated tag with its peeled commit. Explicit
    commit checkout preserves remote tag objects; strict annotation/remote identity
    checks remain required (never ref repair or acceptance of lightweight tags).
    Existing releases (including drafts) and API failures block publication. Public
-   creation first requires public visibility and the read-only immutable-releases
-   policy endpoint to confirm enabled=true. RELEASE_POLICY_TOKEN must be a
-   fine-grained Administration:read repository secret scoped to this repository.
-   It is used only by policy GETs, never release/content writes. GH_TOKEN remains
-   the ordinary contents:write workflow credential. Branch CI probes the policy
-   credential before uploading candidates; missing/expired credentials fail before
-   tagging. No token fallback is supported.
+   creation first requires canonical public repository metadata. The automatic
+   GitHub token handles metadata and release/content operations; no administrative token or
+   immutable-policy endpoint preflight is required. Post-publication verification
+   still requires immutable release metadata.
    scripts/publication.py publishes draft-first: bounded no-cache visibility polling
    after one successful create (never repeats writes), canonical authenticated asset
    API identities/digests/downloaded bytes and stable metadata. Draft browser links
    may use untagged-*; public links must use the exact version tag. Source/annotated
-   tag, candidate bytes, public visibility and immutable policy are rechecked before
+   tag, candidate bytes and canonical public visibility are rechecked before
    freeze. Published exact bytes/complete assetset/stable immutable metadata are then
    checked anonymously. Failed drafts/tags require a NEW version, never overwrite,
    repair or retag. Normal tag publication does not require the local owner publisher.
 
-Local rehearsal (after evidence and approvals):
+Local rehearsal (no approval environment variables required; evidence must match):
 
 ```
 python3 scripts/release.py stage --tag v0.2.0

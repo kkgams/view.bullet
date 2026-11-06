@@ -25,9 +25,8 @@ class ReleaseTests(unittest.TestCase):
         self.root = self.work / 'repo'
         shutil.copytree(ROOT, self.root, ignore=shutil.ignore_patterns('.git', '__pycache__', 'dist', 'node_modules'))
         bind(self.root, r)
-        self.env = {f'APPROVED_{name}_SHA256': r.digest((self.root / name).read_bytes()) for name in ('LICENSE', 'NOTICE')}
-        self.env['GITHUB_REPOSITORY'] = 'kkgams/' + json.loads((self.root / 'package.json').read_text())['name']
-        self.patch = patch.dict(os.environ, self.env)
+        self.env = {'GITHUB_REPOSITORY': 'kkgams/' + json.loads((self.root / 'package.json').read_text())['name']}
+        self.patch = patch.dict(os.environ, self.env, clear=True)
         self.patch.start()
         self.addCleanup(self.patch.stop)
         self.out = self.work / 'out'
@@ -63,11 +62,10 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             r.install(archives, self.out / 'SHA256SUMS', combined)
 
-    def test_approval_evidence_canonical_and_version_gates(self):
-        for key in self.env:
-            with patch.dict(os.environ, {key: ''}):
-                with self.assertRaises((ValueError, KeyError)):
-                    r.payload(self.root, 'v0.1.0')
+    def test_evidence_canonical_and_version_gates(self):
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': ''}):
+            with self.assertRaises(ValueError):
+                r.payload(self.root, 'v0.1.0')
         with self.assertRaises(ValueError):
             r.payload(self.root, 'v00.1.0')
         p = next((self.root / 'src').rglob('*.js'))
@@ -121,7 +119,7 @@ class ReleaseTests(unittest.TestCase):
             r.install(archives, self.out / 'SHA256SUMS', target)
 
     def test_branch_and_api_fail_closed(self):
-        with patch.object(r.subprocess, 'run'), patch.object(r.subprocess, 'check_output', side_effect=[b'a', b'b', b'a']), patch.dict(os.environ, {'GITHUB_SHA': 'a'}):
+        with patch.object(r, '__file__', str(self.root / 'scripts/release.py')), patch.object(r.subprocess, 'check_output', side_effect=[b'a', b'b']), patch.dict(os.environ, {'GITHUB_SHA': 'a'}):
             with self.assertRaises(ValueError):
                 r.branch('v0.1.0')
         for code in (401, 403, 500):
@@ -197,13 +195,11 @@ class ReleaseTests(unittest.TestCase):
                            ('prepared_adaptations', [])]:
             proof = {**original, key: value}
             rebind(self.root, r, proof)
-            with patch.dict(os.environ, {'APPROVED_NOTICE_SHA256': r.digest((self.root / 'NOTICE').read_bytes())}):
-                with self.assertRaises(ValueError):
-                    r.payload(self.root, 'v0.1.0')
-        rebind(self.root, r, {'files_sha256': original['files_sha256']})
-        with patch.dict(os.environ, {'APPROVED_NOTICE_SHA256': r.digest((self.root / 'NOTICE').read_bytes())}):
             with self.assertRaises(ValueError):
                 r.payload(self.root, 'v0.1.0')
+        rebind(self.root, r, {'files_sha256': original['files_sha256']})
+        with self.assertRaises(ValueError):
+            r.payload(self.root, 'v0.1.0')
 
     def test_destination_root_and_source_ancestor_symlinks(self):
         self.stage()
@@ -218,35 +214,25 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             r.payload(self.root, 'v0.1.0')
 
-    def test_release_branch_approval_truth_table(self):
+    def test_no_environment_approval_needed(self):
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
-        condition = "startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/release' && (vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''))"
+        condition = "startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release'"
         self.assertEqual(workflow.count('if: ' + condition), 3)
-        for license_value, notice_value, stages, succeeds in [('', '', False, False),
-                (self.env['APPROVED_LICENSE_SHA256'], '', True, False),
-                ('', self.env['APPROVED_NOTICE_SHA256'], True, False),
-                ('bad', 'bad', True, False),
-                (self.env['APPROVED_LICENSE_SHA256'], self.env['APPROVED_NOTICE_SHA256'], True, True)]:
-            self.assertEqual(bool(license_value or notice_value), stages)
-            if stages:
-                with patch.dict(os.environ, {'APPROVED_LICENSE_SHA256': license_value, 'APPROVED_NOTICE_SHA256': notice_value}):
-                    if succeeds:
-                        r.payload(self.root, 'v0.1.0')
-                    else:
-                        with self.assertRaises(ValueError):
-                            r.payload(self.root, 'v0.1.0')
+        self.assertNotIn('APPROVED_', workflow)
+        self.assertNotIn('vars.LICENSE_SHA256', workflow)
+        self.stage()
+        r.check(self.root, self.out, 'v0.1.0')
 
     def test_policy_and_draft_before_publish(self):
         repository = self.env['GITHUB_REPOSITORY']
-        for enabled in (True, False):
-            with patch.object(r.urllib.request, 'urlopen', side_effect=[
-                    io.BytesIO(b'{"private": false, "visibility": "public"}'),
-                    io.BytesIO(json.dumps({'enabled': enabled}).encode())]):
-                if enabled:
+        document = {'full_name': repository, 'private': False, 'visibility': 'public'}
+        with patch.object(r.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(document).encode())) as request:
+            r.policy(repository, 'token')
+            self.assertEqual(request.call_args.args[0].full_url, 'https://api.github.com/repos/' + repository)
+        for field, value in [('full_name', 'other/repo'), ('private', True), ('visibility', 'private')]:
+            with patch.object(r.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(dict(document, **{field: value})).encode())):
+                with self.assertRaises(ValueError):
                     r.policy(repository, 'token')
-                else:
-                    with self.assertRaises(ValueError):
-                        r.policy(repository, 'token')
         for code in (401, 403, 404, 500):
             with patch.object(r.urllib.request, 'urlopen', side_effect=urllib.error.HTTPError('url', code, 'error', {}, None)):
                 with self.assertRaises(urllib.error.HTTPError):
@@ -269,17 +255,72 @@ class ReleaseTests(unittest.TestCase):
                 r.draft(self.root, self.out, 'v0.1.0', 'token')
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
         self.assertIn('scripts/publication.py publish', workflow)
-        self.assertIn('RELEASE_POLICY_TOKEN: ${{ secrets.RELEASE_POLICY_TOKEN }}', workflow)
         publisher = (ROOT / 'scripts/publication.py').read_text()
         self.assertLess(publisher.index('draft_bytes(repository'), publisher.index("gh('release', 'edit'"))
         self.assertIn("'--draft', '--verify-tag'", publisher)
 
     def test_workflow_gates(self):
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
-        for gate in ('needs: candidate', "vars.LICENSE_SHA256 != '' || vars.NOTICE_SHA256 != ''", 'publication.py policy', 'publication.py publish', 'release.py branch', 'release.py absent', 'release.py check', 'GH_TOKEN: ${{ github.token }}'):
+        for gate in ('needs: candidate', 'publication.py policy', 'publication.py publish', 'release.py branch', 'release.py absent', 'release.py check', 'GH_TOKEN: ${{ github.token }}'):
             self.assertIn(gate, workflow)
         self.assertNotIn('--clobber', workflow)
         self.assertNotIn('npm publish', workflow)
+
+
+    def test_matching_tag_on_non_release_branch(self):
+        import subprocess
+        gitroot = Path(self.temp.name) / 'git-identity'
+        gitroot.mkdir()
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(gitroot), *args], stderr=subprocess.PIPE).strip()
+        git('init', '-b', 'feature')
+        git('config', 'user.name', 'Test')
+        git('config', 'user.email', 'test@example.invalid')
+        (gitroot / 'package.json').write_text(json.dumps({'version': '0.1.0'}))
+        git('add', '.')
+        git('commit', '-m', 'fixture')
+        git('tag', '-a', 'v0.1.0', '-m', 'fixture')
+        head = git('rev-parse', 'HEAD').decode()
+        previous = Path.cwd()
+        try:
+            os.chdir(gitroot)
+            with patch.object(r, '__file__', str(gitroot / 'scripts/release.py')), patch.dict(os.environ, {'GITHUB_SHA': head}):
+                r.branch('v0.1.0')
+                with patch.dict(os.environ, {'GITHUB_SHA': 'wrong'}):
+                    with self.assertRaises(ValueError):
+                        r.branch('v0.1.0')
+                with self.assertRaises(ValueError):
+                    r.branch('v0.2.0')
+        finally:
+            os.chdir(previous)
+
+
+    def test_required_legal_files_are_nonempty_regular_files(self):
+        for name in ('LICENSE', 'NOTICE'):
+            path = self.root / name
+            original = path.read_bytes()
+            for invalid in ('missing', 'empty', 'whitespace', 'directory', 'symlink'):
+                with self.subTest(name=name, invalid=invalid):
+                    path.unlink()
+                    if invalid == 'empty':
+                        path.write_bytes(b'')
+                    elif invalid == 'whitespace':
+                        path.write_bytes(b' \n')
+                    elif invalid == 'directory':
+                        path.mkdir()
+                    elif invalid == 'symlink':
+                        target = self.root / 'legal-target'
+                        target.write_bytes(original)
+                        path.symlink_to(target)
+                    try:
+                        with self.assertRaises(ValueError):
+                            r.legal_ready(self.root)
+                    finally:
+                        if path.is_dir():
+                            path.rmdir()
+                        elif path.exists() or path.is_symlink():
+                            path.unlink()
+                        path.write_bytes(original)
 
 
 if __name__ == '__main__':

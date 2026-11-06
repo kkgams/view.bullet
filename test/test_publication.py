@@ -60,7 +60,7 @@ class PublicationTests(unittest.TestCase):
         self.before_edit = lambda: None
         self.start_patch(patch.dict(os.environ, {
             'GITHUB_REPOSITORY': self.repo, 'GITHUB_SHA': self.sha,
-            'GH_TOKEN': 'contents-secret', 'RELEASE_POLICY_TOKEN': 'admin-secret',
+            'GH_TOKEN': 'contents-secret',
             'GH_DEBUG': 'api',
         }, clear=True))
         self.runner = self.start_patch(patch.object(p.subprocess, 'run', side_effect=self.run_command))
@@ -95,9 +95,7 @@ class PublicationTests(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, output.encode(), b'')
         self.assertEqual(args[0], 'gh')
         self.assertEqual(kwargs['env']['GH_TOKEN'], 'contents-secret')
-        self.assertNotIn('RELEASE_POLICY_TOKEN', kwargs['env'])
         self.assertEqual(kwargs['env']['GH_DEBUG'], '')
-        self.assertNotIn('admin-secret', repr(args))
         self.assertNotIn('contents-secret', repr(args))
         output = b''
         if args[1] == 'api':
@@ -154,20 +152,18 @@ class PublicationTests(unittest.TestCase):
     def urlopen(self, request, **kwargs):
         self.requests.append(request)
         url = request.full_url
-        if request.get_header('Authorization') is not None:
-            self.assertEqual(request.get_header('Authorization'), 'Bearer admin-secret')
-            if url == f'{p.API}/repos/{self.repo}':
-                document = self.repository
-            elif url == f'{p.API}/repos/{self.repo}/immutable-releases':
-                document = {'enabled': True}
-            else:
-                self.fail('policy token used for non-policy endpoint')
+        if url == f'{p.API}/repos/{self.repo}':
+            self.assertEqual(request.get_header('Authorization'), 'Bearer contents-secret')
+            document = self.repository
         elif '/releases/tags/' in url:
+            self.assertIsNone(request.get_header('Authorization'))
             self.assertTrue(self.published)
             document = self.document
         elif '/releases/17/assets?' in url:
+            self.assertIsNone(request.get_header('Authorization'))
             document = self.document['assets']
         elif '/releases/download/' in url:
+            self.assertIsNone(request.get_header('Authorization'))
             self.before_public_download()
             return io.BytesIO(self.expected[url.rsplit('/', 1)[1]])
         else:
@@ -188,19 +184,23 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(self.check.call_count, 2)
         self.assertEqual(self.branch.call_count, 2)
         self.assertTrue(self.published)
-        self.assertEqual(sum('/immutable-releases' in r.full_url for r in self.requests), 2)
+        self.assertFalse(any('/immutable-releases' in r.full_url for r in self.requests))
 
-    def test_default_is_read_only_policy_and_needs_no_contents_token(self):
-        del os.environ['GH_TOKEN']
+    def test_default_is_read_only_policy_using_workflow_token(self):
         p.main(['--root', str(self.root)])
         self.assertEqual(self.calls, [])
-        self.assertEqual(len(self.requests), 2)
+        self.assertEqual(len(self.requests), 1)
 
-    def test_policy_never_uses_contents_token_as_fallback(self):
-        del os.environ['RELEASE_POLICY_TOKEN']
+    def test_policy_requires_workflow_token(self):
+        del os.environ['GH_TOKEN']
         with self.assertRaises(KeyError):
             p.policy(self.repo)
         self.assertEqual(self.requests, [])
+
+    def test_policy_requires_no_administrative_token(self):
+        p.policy(self.repo)
+        self.assertEqual(len(self.requests), 1)
+        self.assertEqual(self.requests[0].full_url, f'{p.API}/repos/{self.repo}')
         self.assertEqual(self.calls, [])
 
     def test_policy_403_is_fatal_not_absence(self):
@@ -212,10 +212,6 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(self.writes(), [])
 
     def test_policy_disabled_private_wrong_repo_or_malformed(self):
-        for document in ({'enabled': False}, {'enabled': 1}, {}, [], {'enabled': 'true'}):
-            with self.subTest(document=document), patch.object(p, 'http', side_effect=[self.repository, document]):
-                with self.assertRaises((ValueError, KeyError)):
-                    p.policy(self.repo)
         for field, value in [('private', True), ('private', 0), ('visibility', 'private'), ('full_name', 'other/repo')]:
             document = dict(self.repository, **{field: value})
             with self.subTest(field=field), self.assertRaises(ValueError):
@@ -383,7 +379,7 @@ class PublicationTests(unittest.TestCase):
         probes = 0
         def fail(request, **kwargs):
             nonlocal probes
-            if request.full_url.endswith('/immutable-releases'):
+            if request.full_url == f'{p.API}/repos/{self.repo}':
                 probes += 1
                 if probes == 2:
                     error = urllib.error.HTTPError(request.full_url, 403, 'Forbidden', {}, io.BytesIO())

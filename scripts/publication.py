@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed, draft-first CI publisher. Reads may be repeated; writes never are.
 
-RELEASE_POLICY_TOKEN needs fine-grained Administration:read. GH_TOKEN is the
-workflow contents:write token. No existing release (including a draft) is resumed.
+GH_TOKEN is the automatic workflow contents:write token. No existing release (including a draft) is resumed.
 """
 import argparse
 import json
@@ -66,18 +65,12 @@ def repository_state(document, repository):
 
 
 def policy(repository):
-    credential = token('RELEASE_POLICY_TOKEN')
-    repository_state(http(f'{API}/repos/{repository}', credential), repository)
-    document = http(f'{API}/repos/{repository}/immutable-releases', credential)
-    require(type(document) is dict and document['enabled'] is True,
-            'repository immutable releases must be enabled')
+    repository_state(http(f'{API}/repos/{repository}', token('GH_TOKEN')), repository)
 
 
 def gh(*args, timeout=60):
     env = dict(os.environ, GH_TOKEN=token('GH_TOKEN'), GH_HOST='github.com',
                GH_PROMPT_DISABLED='1', GH_DEBUG='')
-    # The administrative credential must never enter a gh subprocess.
-    env.pop('RELEASE_POLICY_TOKEN', None)
     result = subprocess.run(['gh', *map(str, args)], env=env, capture_output=True, timeout=timeout)
     require(result.returncode == 0, 'gh command failed (exit ' + str(result.returncode) + '): ' + ' '.join(map(str, args)))
     return result.stdout
@@ -235,7 +228,6 @@ def public_snapshot(repository, tag, expected):
 def publish(root, out, tag):
     repository, tag = identity(root, tag)
     token('GH_TOKEN')
-    token('RELEASE_POLICY_TOKEN')
     bound = source(root, out, tag)
     expected = {p.name: p.read_bytes() for p in out.iterdir()}
     repository_state(api(repository), repository)
