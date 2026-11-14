@@ -1,31 +1,70 @@
 {
   "plugins": [
-    "https://github.com/kkgams/plugin.fs/releases/download/v0.2.0/plugin.fs.wasm",
-    "https://github.com/kkgams/plugin.layout/releases/download/v0.2.0/plugin.layout.wasm"
+    {
+      "$file": "https://github.com/kkgams/plugin.fs/releases/download/v0.2.3/plugin.fs.wasm"
+    },
+    {
+      "$file": "https://github.com/kkgams/plugin.layout/releases/download/v0.2.3/plugin.layout.wasm"
+    }
   ],
   "ui": {
     "keys": [],
     "theme": {
-      "url": "https://github.com/kkgams/theme.the98/releases/download/v0.2.6/theme.the98-0.2.6.zip#themes/the98.css"
+      "url": {
+        "$file": {
+          "url": "https://github.com/kkgams/theme.gams/releases/download/v1.0.2/theme.gams.zip",
+          "entry": "themes/the98.css"
+        }
+      }
     },
     "services": {
       "ui-context": {
-        "url": "https://github.com/kkgams/ui-service.context/releases/download/v0.2.0/ui-service.context-0.2.0.zip#ui-plugins/context.js"
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/ui-service.context/releases/download/v0.2.3/ui-service.context.zip",
+            "entry": "ui-plugins/context.js"
+          }
+        }
       },
       "ui-keys": {
-        "url": "https://github.com/kkgams/ui-service.keys/releases/download/v0.2.0/ui-service.keys-0.2.0.zip#ui-plugins/keys.js"
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/ui-service.keys/releases/download/v0.2.2/ui-service.keys.zip",
+            "entry": "ui-plugins/keys.js"
+          }
+        }
       },
       "ui-toast": {
-        "url": "https://github.com/kkgams/ui-service.toast/releases/download/v0.2.0/ui-service.toast-0.2.0.zip#ui-plugins/toast.js"
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/ui-service.toast/releases/download/v0.2.2/ui-service.toast.zip",
+            "entry": "ui-plugins/toast.js"
+          }
+        }
       },
       "ui-popup": {
-        "url": "https://github.com/kkgams/ui-service.popup/releases/download/v0.2.0/ui-service.popup-0.2.0.zip#ui-plugins/popup.js"
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/ui-service.popup/releases/download/v0.2.2/ui-service.popup.zip",
+            "entry": "ui-plugins/popup.js"
+          }
+        }
       },
       "ui-tooltip": {
-        "url": "https://github.com/kkgams/ui-service.tooltip/releases/download/v0.2.0/ui-service.tooltip-0.2.0.zip#ui-plugins/tooltip.js"
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/ui-service.tooltip/releases/download/v0.2.2/ui-service.tooltip.zip",
+            "entry": "ui-plugins/tooltip.js"
+          }
+        }
       },
       "ui-layout": {
-        "url": "https://github.com/kkgams/ui-service.layout/releases/download/v0.2.0/ui-service.layout-0.2.0.zip#ui-plugins/layout.js",
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/ui-service.layout/releases/download/v0.2.2/ui-service.layout.zip",
+            "entry": "ui-plugins/layout.js"
+          }
+        },
         "config": {
           "layout": "<view-bullet data-source=\"bulletml.json\" />"
         }
@@ -33,7 +72,12 @@
     },
     "views": {
       "view-files": {
-        "url": "https://github.com/kkgams/view.files/releases/download/v1.0.0/view.files-1.0.0.zip#views/view-files.js",
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/view.files/releases/download/v1.0.1/view.files.zip",
+            "entry": "views/view-files.js"
+          }
+        },
         "label": "view-files",
         "internal": false,
         "config": {
@@ -43,12 +87,22 @@
         }
       },
       "files-rename": {
-        "url": "https://github.com/kkgams/view.files/releases/download/v1.0.0/view.files-1.0.0.zip#views/files-rename.js",
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/view.files/releases/download/v1.0.1/view.files.zip",
+            "entry": "views/files-rename.js"
+          }
+        },
         "label": "files-rename",
         "internal": true
       },
       "files-default": {
-        "url": "https://github.com/kkgams/view.files/releases/download/v1.0.0/view.files-1.0.0.zip#views/files-default.js",
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/view.files/releases/download/v1.0.1/view.files.zip",
+            "entry": "views/files-default.js"
+          }
+        },
         "label": "files-default",
         "internal": true
       },
@@ -58,7 +112,12 @@
         "internal": true
       },
       "view-code": {
-        "url": "https://github.com/kkgams/view.code/releases/download/v0.2.0/view.code-0.2.0.zip#views/view-code.js",
+        "url": {
+          "$file": {
+            "url": "https://github.com/kkgams/view.code/releases/download/v0.2.2/view.code.zip",
+            "entry": "views/view-code.js"
+          }
+        },
         "label": "Code",
         "internal": true
       }

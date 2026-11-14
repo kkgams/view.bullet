@@ -26,11 +26,27 @@ if modules.is_symlink():
 # Current Host cache keys exclude ZIP entry selectors. Only remove configured
 # downloads with matching completion markers; unrelated/legacy caches stay put.
 config = json.loads((ROOT / "gams.json").read_text())
+def source_url(source):
+    if isinstance(source, dict):
+        if set(source) != {"$file"}:
+            raise SystemExit("Invalid Unit source: expected a $file expression")
+        source = source["$file"]
+        if isinstance(source, dict):
+            if not {"url"} <= set(source) <= {"url", "entry"}:
+                raise SystemExit("Invalid $file descriptor")
+            if "entry" in source and (not isinstance(source["entry"], str) or not source["entry"]):
+                raise SystemExit("Invalid $file entry: expected a non-empty string")
+            source = source["url"]
+    if not isinstance(source, str) or not source:
+        raise SystemExit("Invalid Unit source: expected a non-empty path or URL")
+    return source
+
+
 ui = config["ui"]
 sources = [*config["plugins"], ui["theme"]["url"]]
 for group in (ui["views"], ui["services"]):
     sources.extend(entry["url"] for entry in group.values())
-for source in sorted(set(sources)):
+for source in sorted({source_url(source) for source in sources}):
     url, _ = urldefrag(source)
     if urlsplit(url).scheme != "https":
         continue
