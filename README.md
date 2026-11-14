@@ -1,41 +1,25 @@
 # view.bullet
 
-One separately installable ZIP per View, never npm/OCI. Host contract: GAMS 2.0.3.
-Run npm test (Node 24, Python 3 stdlib). release.json binds package identities, deployment maps and hashes.
-Absolute imports enumerated in release.json are required Host-owned runtime/util/widget APIs; missing APIs, config or schemas are bugs, not optional fallbacks.
-Keep Project Config ids/tags and URLs as deployed. view-markdow spelling is deliberately unchanged.
-Blend 1D retains views/view-animation-blend-spaces.js; independently installed 2D requires views/view-animation-blend-space-2d.js in Project Config. No HTML/class behavior is rewritten.
-Install using scripts/release.py install (verified checksums), retain metadata under notices/project-units/<package>. Refuse all overwrite collisions.
-Dependencies (plugins, sibling Views, UI Services) remain Project configured; static Host imports are documented, not vendored.
-HOST-CONTRACT.json includes required dynamic widget paths and known legacy schema limits.
-GUI validation pending: Bullet simulation controls, preview and persistence. No blanket E2E claim.
+BulletML simulation preview and controls for [GAMS](https://github.com/kkgams/gams). Host runtime APIs, utilities and widgets remain external dependencies.
 
-## Release authorization
+| View | Source | Screenshot | Original work |
+| --- | --- | --- | --- |
+| `view-bullet` | [views/view-bullet.js](src/view.bullet/views/view-bullet.js) | Not available | GAMS contributors |
 
-A pushed matching version tag authorizes publication from any branch. No manual
-checksum approval variables are required; source/evidence and artifact checks remain
-strict. See `PUBLISHING.md`.
+GAMS contributions: [Apache-2.0](LICENSE); retain [NOTICE](NOTICE) and [licensing scope](LICENSING.md).
 
-## Local commands
+## Development
 
-Requires Node.js 24+, Python 3, Make, curl, tar and unzip. No npm install needed.
+Requires Node.js 24+, Python 3, Make, curl, tar, unzip and zip. No compilation or package installation is required.
 
-```sh
-npm test
-make open                      # current local gams.json in tools/gams.app
-make serve-docs                 # http://localhost:8080; DOCS_PORT overrides
-make validate-docs
-make docs                       # portable wiki under build/site/
-```
+| Command | Purpose |
+| --- | --- |
+| `make open` | Open local gams.json in the released macOS Apple Silicon Host. |
+| `make check` | Check View JavaScript syntax. |
+| `make package` | Build stable-name View ZIPs and SHA256SUMS under build.nosync/. |
+| `make docs` | Build pinned wiki v1.4.0 under build.nosync/site/. |
+| `make serve-docs DOCS_PORT=8081` | Preview the wiki on an independent port. |
+| `make validate-docs` | Validate wiki content and links. |
+| `make clean` | Remove build.nosync and identified downloaded Host/Unit caches; refuse tracked files or symlinks and preserve supplied tools/Units. |
 
-The View source loads directly from `src/`; no compilation is required.
-`make tools/gams.app` downloads the released macOS Apple Silicon Host only when
-absent, preserving its notices. `make open` explicitly sets `GAMS_APP_CWD` to
-this repository; no sibling checkout is required. Keep macOS security checks intact.
-Published dependencies are pinned in `gams.json` and cached under ignored
-`gams_modules/`. First launch needs network access.
-
-The wiki uses pinned justgook/wiki v1.4.0. GitHub Pages runs `make docs` on every
-push to `release`, independently of Unit tags. Enable **Settings → Pages → Source
-→ GitHub Actions**. `build-docs` remains an alias. Native GUI and hosted workflow
-execution are separate verification steps.
+The local Project opens `bulletml.json`, a minimal empty BulletML document. Editing and saving changes that real file. Simulation controls, preview and persistence need native GUI verification. Missing required Host imports, config or schemas are errors.

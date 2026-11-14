@@ -1,10 +1,9 @@
-node_modules/
-dist/
-__pycache__/
-*.pyc
-.DS_Store
-
-# Documentation output, downloaded Host and Project dependency cache.
-build/
+build.nosync/
 tools/
 gams_modules/
+.DS_Store
+__pycache__/
+*.pyc
+# Preserve legacy generated output until explicitly removed.
+build/
+dist/
