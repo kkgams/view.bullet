@@ -114,7 +114,10 @@ class BulletMLEngine {
 
     validateDocument(bulletml) {
         requireObject(bulletml, "JSON BulletML document")
-        assert(["none", "vertical", "horizontal"].includes(bulletml.type), "JSON BulletML type must be none, vertical, or horizontal")
+        assert(
+            ["none", "vertical", "horizontal"].includes(bulletml.type),
+            "JSON BulletML type must be none, vertical, or horizontal",
+        )
         requireArray(bulletml.bullets, "JSON BulletML bullets")
         requireArray(bulletml.actions, "JSON BulletML actions")
         requireArray(bulletml.fires, "JSON BulletML fires")
@@ -382,7 +385,8 @@ class BulletMLEngine {
 
     createBulletFrames(bullet, params) {
         const frames = []
-        const actionRefs = bullet.actionRefs === undefined ? [] : requireArray(bullet.actionRefs, "JSON BulletML bullet actionRefs")
+        const actionRefs =
+            bullet.actionRefs === undefined ? [] : requireArray(bullet.actionRefs, "JSON BulletML bullet actionRefs")
         for (const actionRef of actionRefs) {
             const ref = this.evalRef(actionRef, params, "bullet.actionRefs[]")
             frames.push(createFrame(this.resolveAction(ref.index), ref.params))
@@ -404,7 +408,8 @@ class BulletMLEngine {
         if (valueSpec === undefined) return directionToPoint(entity.x, entity.y, this.targetX, this.targetY)
         const spec = requireObject(valueSpec, "JSON BulletML direction")
         const value = this.evalValue(spec.value, params)
-        if (spec.type === "aim") return normalizeDirection(directionToPoint(entity.x, entity.y, this.targetX, this.targetY) + value)
+        if (spec.type === "aim")
+            return normalizeDirection(directionToPoint(entity.x, entity.y, this.targetX, this.targetY) + value)
         if (spec.type === "absolute") return normalizeDirection(value)
         if (spec.type === "relative") return normalizeDirection(entity.direction + value)
         if (spec.type === "sequence") return normalizeDirection(entity.lastFireDirection + value)
@@ -443,7 +448,10 @@ class BulletMLEngine {
             assert(Number.isFinite(value), "JSON BulletML numeric value must be finite")
             return value
         }
-        assert(typeof value === "string" && value.trim().length > 0, "JSON BulletML expression value must be non-empty string")
+        assert(
+            typeof value === "string" && value.trim().length > 0,
+            "JSON BulletML expression value must be non-empty string",
+        )
         const source = value.trim()
         const rewritten = source.replace(/\$(\d+|rand|rank)/g, (_match, name) => {
             if (name === "rand") return `(${this.random()})`
@@ -854,7 +862,7 @@ export class ViewBullet extends ViewCanvasBase {
         const payload = unwrap(await runtime.call("ui.popup.open", this.createOpenPopupOptions()))
         if (!payload || payload.cancelled) return
         const selection = Array.isArray(payload.selection) ? payload.selection[0] : payload.selection
-        assert(selection && selection.path, "view-bullet open requires selected JSON BulletML file path")
+        assert(selection?.path, "view-bullet open requires selected JSON BulletML file path")
         this.sourcePath = selection.path
         await this.load()
     }
@@ -891,7 +899,7 @@ export class ViewBullet extends ViewCanvasBase {
                 attributes: { "data-source": this.sourcePath, "data-lang": "json" },
             }),
         )
-        if (payload && payload.reload) await this.load()
+        if (payload?.reload) await this.load()
     }
 
     async saveToPath(path) {
