@@ -6,6 +6,7 @@ status: reference
 # view.bullet
 
 BulletML simulation preview and controls for [GAMS](https://github.com/kkgams/gams). Host runtime APIs, utilities and widgets remain external dependencies.
+[Launch fresh BulletML demo](https://gams.z0.lv/app.html?showcase=https%3A%2F%2Fgithub.com%2Fkkgams%2Fshowcases%2Freleases%2Fdownload%2Fv0.3.0%2Fbulletml.zip). Play the spiral, pause, and step one frame at a time.
 
 | View | Source | Screenshot | Original work |
 | --- | --- | --- | --- |
